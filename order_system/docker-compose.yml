@@ -5,23 +5,36 @@ services:
       # backend앱의 빌드 컨텍스트 위치 지정
       context: ./ordering_server
       dockerfile: Dockerfile
+    restart: on-failure
     ports:
       - "8080:8080"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mariadb://host.docker.internal:3306/spring_order 
+    # 도커 컴포즈로 네트워크를 결합하였기 때문에 mydb라는 서비스 명으로 host호출 가능
+      - SPRING_DATASOURCE_URL=jdbc:mariadb://mydb:3306/spring_order 
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=1234
     volumes:
+    # docker-compose의 특정경로의 image-path라는 이름으로 /tmp와 매핑
       - image-path:/tmp
+      # 직접 경로 매핑
+      # - /Users/hoon/Desktop/tmp:/tmp
 
-  # frontend:
-  #   build:
-  #     # backend앱의 빌드 컨텍스트 위치 지정
-  #     context: ./ordering_frontend
-  #     dockerfile: Dockerfile
-  #   ports:
-  #     - "8081:8081"
-  # db:
+      # mydb가 먼저 생성된 이후에 backend를 생성하겠다
+    depends_on:
+      - mydb
+
+  frontend:
+    build:
+      # backend앱의 빌드 컨텍스트 위치 지정
+      context: ./ordering_frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+  mydb:
+    image: mariadb
+    environment:
+      - MARIADB_ROOT_PASSWORD=1234
+      - MARIADB_DATABASE=spring_order
 
 volumes:
   image-path:
